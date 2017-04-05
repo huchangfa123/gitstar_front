@@ -7,9 +7,9 @@
           <el-submenu index="1">
             <template slot="title"><i class="el-icon-menu"></i>最近标签</template>
               <el-menu-item-group  v-for="tag in recenttag" :key="tag.index">
-                <el-menu-item index="tag.index">{{tag.tagname}}</el-menu-item>
+                <el-menu-item index="tag.index" @click="getdatabytag(tag.tagname)">{{tag.tagname}}</el-menu-item>
               </el-menu-item-group>
-                <el-menu-item>更多标签</el-menu-item>
+                <el-menu-item @click="getstars()">更多标签</el-menu-item>
           </el-submenu>
           <el-menu-item index="3"><i class="el-icon-caret-left"></i>退出登录</el-menu-item>
         </el-menu>
@@ -26,7 +26,7 @@
             </div>
             <div class="tagblock">
               <div class="tagshowblock" v-for="tag in star.tag">
-                <el-tag type="danger" closable="true" @close="handleClose(star.index, tag.TagName)">{{tag.TagName}}</el-tag>&nbsp;&nbsp;
+                <el-tag :color="tag.TagColor" closable="true" @close="handleClose(star.index, tag.TagName)">{{tag.TagName}}</el-tag>&nbsp;&nbsp;
               </div>
               <div class="addtag">
                 <el-button :id = "star.index" class="addtagbutton" type="text" icon="plus" @click="setpjid(star.index)"></el-button>
@@ -42,11 +42,13 @@
         </div>
       </li>
       <el-dialog title="提示" v-model="dialogVisible" size="tiny">
-        <el-input v-model="input" placeholder="请输入内容" ref="tagname"></el-input>
-        <el-color-picker id="tagcolorpicker" v-model="defaultcolor"></el-color-picker>
+        <span class="dialog_data">
+          <el-input v-model="input" placeholder="请输入内容" ref="tagname"></el-input>
+          <el-color-picker id="tagcolorpicker" v-model="defaultcolor"></el-color-picker>
+        </span>
         <span slot="footer" class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="settags">确 定</el-button>
+          <el-button @click="dialogVisible = false">取 消</el-button>
         </span>
       </el-dialog>
     </ul>
@@ -74,6 +76,7 @@
           console.log(err)
         })
       },
+
       // 获取star的项目数据
       async getstars (code) {
         await this.$http.post('http://localhost:3006/api/getstar', {
@@ -85,18 +88,36 @@
           console.log(err)
         })
       },
+
+      // 根据标签获取项目数据
+      async getdatabytag (ntag) {
+        const tag = ntag
+        await this.$http.post('http://localhost:3006/api/taggetpj', {
+          tag: tag
+        }).then(res => {
+          this.starspj = res.body.data.result
+        }, err => {
+          console.log(err)
+        })
+      },
+
       // 设置标签
       async settags () {
         const id = this.pjid
         const tag = this.$refs.tagname.value
+        const color = this.defaultcolor
+        console.log(color)
         await this.$http.post('http://localhost:3006/api/set', {
           id: this.starspj[id].id,
-          tag: tag
+          tag: tag,
+          color: color
         }).then(res => {
           const tagname = res.body.tag.tagname
+          const color = res.body.tag.tagcolor
           // console.log(tagname)
           this.starspj[id].tag.push({
-            TagName: tagname
+            TagName: tagname,
+            TagColor: color
           })
         })
         this.dialogVisible = false
@@ -186,5 +207,18 @@
   }
   .addtagbutton{
     padding-top: 5px
+  }
+  .dialog_data input{
+    float: left
+  }
+  #tagcolorpicker {
+    float: left;
+    margin-top: 5px 
+  }
+  .dialog-footer {
+    margin-top:20px;
+    display:flex;
+    justify-content: center;
+    align-items: center; 
   }
 </style>
