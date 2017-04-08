@@ -9,7 +9,7 @@
               <el-menu-item-group  v-for="tag in recenttag" :key="tag.index">
                 <el-menu-item index="tag.index" @click="getdatabytag(tag.tagname)">{{tag.tagname}}</el-menu-item>
               </el-menu-item-group>
-                <el-menu-item @click="getstars()">更多标签</el-menu-item>
+                <el-menu-item @click="resetstarspj()">更多标签</el-menu-item>
           </el-submenu>
           <el-menu-item index="3"><i class="el-icon-caret-left"></i>退出登录</el-menu-item>
         </el-menu>
@@ -84,6 +84,7 @@
         }).then(res => {
           // console.log(res.body.data.result)
           this.starspj = res.body.data.result
+          this.allstarpj = res.body.data.result
         }, err => {
           console.log(err)
         })
@@ -101,6 +102,10 @@
         })
       },
 
+      resetstarspj () {
+        this.starspj = this.allstarpj
+      },
+
       // 设置标签
       async settags () {
         const id = this.pjid
@@ -116,6 +121,10 @@
           const color = res.body.tag.tagcolor
           // console.log(tagname)
           this.starspj[id].tag.push({
+            TagName: tagname,
+            TagColor: color
+          })
+          this.allstarpj[id].tag.push({
             TagName: tagname,
             TagColor: color
           })
@@ -137,6 +146,7 @@
       // 删除标签
       async handleClose (id, tag) {
         this.removeTagByValue(this.starspj[id].tag, tag)
+        this.removeTagByValue(this.allstarpj[id].tag, tag)
         await this.$http.post('http://localhost:3006/api/deletetag', {
           id: this.starspj[id].id,
           tag
@@ -149,6 +159,7 @@
       return {
         recenttag: [],
         starspj: [],
+        allstarpj: [],
         dialogVisible: false,
         input: '',
         pjid: '',
