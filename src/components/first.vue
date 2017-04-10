@@ -1,61 +1,55 @@
 <template>
-<div class="content">
-  <div class="vertical-icon-bar">
-      <el-col :span="5">
-        <el-menu default-active="2" class="el-menu-vertical-demo">
-          <el-menu-item index="1"><i class="el-icon-message"></i>用户信息</el-menu-item>
-          <el-submenu index="1">
-            <template slot="title"><i class="el-icon-menu"></i>最近标签</template>
-              <el-menu-item-group  v-for="tag in recenttag" :key="tag.index">
-                <el-menu-item index="tag.index" @click="getdatabytag(tag.tagname)">{{tag.tagname}}</el-menu-item>
-              </el-menu-item-group>
-                <el-menu-item @click="resetstarspj()">更多标签</el-menu-item>
-          </el-submenu>
-          <el-menu-item index="3"><i class="el-icon-caret-left"></i>退出登录</el-menu-item>
-        </el-menu>
-      </el-col>
-  </div>
-  <div class="starsblock">
-    <ul class="starlist">
-      <li v-for="star in starspj" :key="star.index">
-        <div class="pjbasicmessage">
-          <div class="pjmessage">
-            <a :href="star.url"><h3>{{star.pjname}}</h3></a>
-            <div class="pjintro">
-              <p>{{star.intro}}</p>
-            </div>
-            <div class="tagblock">
-              <div class="tagshowblock" v-for="tag in star.tag">
-                <el-tag :color="tag.TagColor" closable="true" @close="handleClose(star.index, tag.TagName)">{{tag.TagName}}</el-tag>&nbsp;&nbsp;
-              </div>
-              <div class="addtag">
-                <el-button :id = "star.index" class="addtagbutton" type="text" icon="plus" @click="setpjid(star.index)"></el-button>
-              </div>
-            </div>
-          </div>
-          <div class="language">
-            <span><i class="el-icon-upload"></i>&nbsp;&nbsp;{{star.language}}</span>
-          </div>
-          <div class="starnum">
-            <span><i class="el-icon-star-on"></i>&nbsp;&nbsp;{{star.stargazers}}</span>
-          </div>
+ <div class="container main-container">
+        <div class="sider">
+            <img :src="useravatar" alt="">
+            <h1>{{username}}</h1>
+            <ul class="categorys">
+                <li class="all" @click="resetstarspj()">ALL CATEGORYS</li>
+                <li v-for="tag in recenttag" :key="tag.index" @click="getdatabytag(tag.tagname)">{{tag.tagname}} <span class="num">{{tag.tagusestime}}</span></li>
+            </ul>
         </div>
-      </li>
-      <el-dialog title="提示" v-model="dialogVisible" size="tiny">
-        <span class="dialog_data">
-          <el-input v-model="input" placeholder="请输入内容" ref="tagname"></el-input>
-          <el-color-picker id="tagcolorpicker" v-model="defaultcolor"></el-color-picker>
-        </span>
-        <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="settags">确 定</el-button>
-          <el-button @click="dialogVisible = false">取 消</el-button>
-        </span>
-      </el-dialog>
-    </ul>
+        <div class="star-list">
+            <div class="box" v-for="star in starspj" :key="star.index">
+                <a class="box-title" :href="star.url">{{star.pjname}}</a> <span class="remark">{{star.secname}}</span><span class="new-remark" @click="setsecnamepjid(star.index)"><i class="icon-remark"></i></span>
+                <div class="content" v-if="star.personalintro === ''">
+                    {{star.intro}}
+                </div>
+                <div class="content" v-else>
+                    {{star.personalintro}}
+                </div>
+                <div class="footer">
+                    <span class="star"><i class="icon-star"></i>{{star.stargazers}}</span>
+                    <el-tag v-for="tag in star.tag" :color="tag.TagColor" closable="true" @close="handleClose(star.index, tag.TagName)">{{tag.TagName}}</el-tag>&nbsp;&nbsp;
+                    <span class="new-tag"><i class="icon-add"  @click="settagpjid(star.index)"></i></span>
+                </div>
+            </div>
+            <div class="loading">
+            </div>            
+        </div>
+        <el-dialog title="设置标签" v-model="dialogVisible" size="tiny">
+          <span class="dialog_data">
+            <el-input v-model="tagname" placeholder="请输入内容" ref="tagname"></el-input>
+            <el-color-picker id="tagcolorpicker" v-model="defaultcolor"></el-color-picker>
+          </span>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="settags">确 定</el-button>
+            <el-button @click="dialogVisible = false">取 消</el-button>
+          </span>
+        </el-dialog>
+        <el-dialog title="设置别名" v-model="dialogVisible2" size="tiny">
+          <span class="dialog_data">
+            <el-input class="secnameinput" v-model="secname" placeholder="请输入内容" ref="secname"></el-input>
+            <el-input class="personalintroinput" v-model="personalintro" type="textarea" :rows="4" placeholder="请输入内容" ref="personalintro"></el-input>
+          </span>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="setsecname">确 定</el-button>
+            <el-button @click="dialogVisible2 = false">取 消</el-button>
+          </span>
+        </el-dialog>
   </div>
-</div>
 </template>
 <script>
+  import _ from 'lodash'
   export default {
     name: 'first',
     created () {
@@ -82,9 +76,11 @@
         await this.$http.post('http://localhost:3006/api/getstar', {
           code: code
         }).then(res => {
-          // console.log(res.body.data.result)
-          this.starspj = res.body.data.result
-          this.allstarpj = res.body.data.result
+          const result = res.body.data.result
+          this.starspj = _.cloneDeep(result)
+          this.allstarpj = _.cloneDeep(result)
+          this.username = res.body.userMessage.username
+          this.useravatar = res.body.userMessage.avatarUrl
         }, err => {
           console.log(err)
         })
@@ -103,7 +99,8 @@
       },
 
       resetstarspj () {
-        this.starspj = this.allstarpj
+        const data = this.allstarpj
+        this.starspj = _.cloneDeep(data)
       },
 
       // 设置标签
@@ -131,9 +128,32 @@
         })
         this.dialogVisible = false
       },
-      setpjid (id) {
+      // 设置别名和备注
+      async setsecname () {
+        const id = this.pjid
+        const secname = this.$refs.secname.value
+        const personalintro = this.$refs.personalintro.value
+        await this.$http.post('http://localhost:3006/api/setsecnameandintro', {
+          id: this.starspj[id].id,
+          secname,
+          personalintro
+        }).then(res => {
+          this.starspj[id].secname = secname
+          this.starspj[id].personalintro = personalintro
+          this.dialogVisible2 = false
+        })
+      },
+
+      settagpjid (id) {
         this.dialogVisible = true
         this.pjid = id
+        this.tagname = ''
+      },
+      setsecnamepjid (id) {
+        this.dialogVisible2 = true
+        this.pjid = id
+        this.secname = this.starspj[id].secname
+        this.personalintro = this.starspj[id].personalintro
       },
       removeTagByValue (arr, val) {
         for (let i = 0; i < arr.length; i++) {
@@ -157,11 +177,16 @@
     },
     data () {
       return {
+        tagname: '',
+        username: '',
+        useravatar: '',
         recenttag: [],
         starspj: [],
         allstarpj: [],
         dialogVisible: false,
-        input: '',
+        dialogVisible2: false,
+        secname: '',
+        personalintro: '',
         pjid: '',
         defaultcolor: '#20a0ff'
       }
@@ -169,56 +194,169 @@
   }
 </script>
 <style scoped>
-  .pjbasicmessage{
-    border:0;
-    border-top:1px solid #DDDDDD;
-    border-bottom:1px solid solid #DDDDDD;
-    width: 1000px;
-    height: 200px;
-    margin-left: 300px;
-    margin-right: 150px;
+  @import '../store/spectre.min.css';
+  @import '../store/style.css';
+
+  .main-container {
+    max-width: 960px;
+    margin-top: 100px;
   }
-  .starlist li{
-    list-style: none
-  }
-  .pjmessage{
-    margin-left: 30px; 
+  .main-container .sider {
+    width: 170px;
     float: left;
-    text-align: left;
-    width: 500px;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 10px;
   }
-  .pjmessage p{ 
-    font-size: 14px
+  .main-container .sider img {
+    width: 150px;
+    height: 150px;
+    margin: 0 10px;
   }
-  .pjintro{
-    overflow:hidden; 
-    text-overflow:ellipsis;
-    display:-webkit-box; 
-    -webkit-box-orient:vertical;
-    -webkit-line-clamp:2; 
-    height: 75px;
-  }
-  .language{
-    margin-top: 20px;
-    float: left;
+  .main-container .sider h1 {
+    font-size: 2.5rem;
+    font-weight: 400;
+    margin-top: 15px;
+    padding: 5px;
     text-align: center;
-    width: 200px;
   }
-  .starnum{
-    margin-top: 20px;
-    float: left;
+  .main-container .sider ul.categorys {
+    list-style: none;
+    margin: 0;
+  }
+  .main-container .sider ul.categorys li {
+    padding: 5px;
+    border-radius: 3px;
+    margin: 0;
+    cursor: default;
+  }
+  .main-container .sider ul.categorys li.all {
     text-align: center;
-    width: 200px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
   }
-  .tagshowblock{
-    float: left;
+  .main-container .sider ul.categorys li:hover {
+    background-color: #f9f9f9;
   }
-  .addtag{
-    float: left;
+  .main-container .sider ul.categorys li.active {
+    color: #0b1e7f;
+    font-weight: 700;
   }
-  .addtagbutton{
-    padding-top: 5px
+  .main-container .sider ul.categorys li.active span.num {
+    background-color: #5998fd;
+    color: #fff;
+    font-weight: 400;
   }
+  .main-container .sider ul.categorys li span.num {
+    float: right;
+    padding: 0 5px;
+    border-radius: 3px;
+  }
+  .main-container .sider ul.categorys li span.color {
+    display: inline-block;
+    height: 11px;
+    width: 11px;
+    border-radius: 50%;
+    background-color: #0b1e7f;
+    margin-right: 3px;
+  }
+  .main-container .star-list {
+    margin-left: 190px;
+  }
+  .main-container .box {
+    border: .1rem solid #f0f1f4;
+    margin-bottom: 10px;
+    padding: 12px;
+  }
+  .main-container .box:hover span.new-remark {
+    display: inline-block;
+  }
+  .main-container .box:hover .footer span.new-tag {
+    display: inline-block;
+  }
+  .main-container .box a.box-title {
+    font-size: 16px;
+    font-weight: 400;
+    color: #0366d6;
+  }
+  .main-container .box span.remark {
+    font-size: 12px;
+    color: #9e9e9e;
+    margin-left: 5px;
+  }
+  .main-container .box span.new-remark {
+    display: none;
+    cursor: pointer;
+    margin-left: 5px;
+    color: #cacaca;
+  }
+  .main-container .box span.new-remark:hover {
+    color: #4c4c4c;
+  }
+  .main-container .box .content {
+    font-size: 13px;
+    margin: 5px 0;
+  }
+  .main-container .box .footer {
+    margin-top: 15px;
+  }
+  .main-container .box .footer span {
+    font-size: 12px;
+    margin: 0 3px;
+  }
+  .main-container .box .footer label {
+    padding: 3px 5px;
+    font-size: 12px;
+    background-color: #f9f9f9;
+    border-radius: 3px;
+  }
+  .main-container .box .footer span.new-tag {
+    display: none;
+    cursor: pointer;
+    color: #cacaca;
+  }
+  .main-container .box .footer span.new-tag:hover {
+    color: #4c4c4c;
+  }
+  @media screen and (max-width: 600px) {
+    .sider {
+    display: none;
+  }
+  .star-list {
+    margin-left: 0px !important;
+  }
+
+  }
+  .auth-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  .auth-page img {
+    width: 300px;
+    height: 300px;
+    margin-top: -10%;
+  }
+  .auth-page h1 {
+    font-size: 3rem;
+    margin: 1rem 0;
+  }
+  .auth-page button {
+    outline: none;
+    padding: .75rem 2rem;
+    border: .1rem solid #0b1e7f;
+    border-radius: 3px;
+    background-color: #fff;
+    transition: background-color linear 0.15s;
+  }
+  .auth-page button:hover {
+    background-color: #f9f9f9;
+    transition: background-color linear 0.15s;
+  }
+
   .dialog_data input{
     float: left
   }
@@ -231,5 +369,8 @@
     display:flex;
     justify-content: center;
     align-items: center; 
+  }
+  .personalintroinput {
+    margin-top: 5px;
   }
 </style>
