@@ -50,6 +50,7 @@
 </template>
 <script>
   import _ from 'lodash'
+  import { mapActions } from 'vuex'
   export default {
     name: 'first',
     created () {
@@ -57,45 +58,32 @@
       const alldata = URL.split('?')[1]
       const data = alldata.split('=')[1]
       const code = data.split('&')[0]
-      this.getrecenttag()
+      this.getrectag()
       this.getstars(code)
     },
     methods: {
+      ...mapActions(['settag', 'setsecnameandintro', 'deletetag', 'getrecenttag', 'getdatabytag', 'getstarpj']),
       // 获取最近添加的标签
-      async getrecenttag () {
-        await this.$http.get('http://localhost:3006/api/getrecenttag').then(res => {
-          // console.log(res.body)
-          this.recenttag = res.body.data.result
-        }, err => {
-          console.log(err)
-        })
+      async getrectag () {
+        let res = await this.getrecenttag()
+        console.log(res)
+        this.recenttag = res.body.data.result
       },
-
       // 获取star的项目数据
       async getstars (code) {
-        await this.$http.post('http://localhost:3006/api/getstar', {
-          code: code
-        }).then(res => {
-          const result = res.body.data.result
-          this.starspj = _.cloneDeep(result)
-          this.allstarpj = _.cloneDeep(result)
-          this.username = res.body.userMessage.username
-          this.useravatar = res.body.userMessage.avatarUrl
-        }, err => {
-          console.log(err)
-        })
+        console.log(code)
+        let res = await this.getstarpj({code})
+        const result = res.body.data.result
+        this.starspj = _.cloneDeep(result)
+        this.allstarpj = _.cloneDeep(result)
+        this.username = res.body.userMessage.username
+        this.useravatar = res.body.userMessage.avatarUrl
       },
 
       // 根据标签获取项目数据
       async getdatabytag (ntag) {
-        const tag = ntag
-        await this.$http.post('http://localhost:3006/api/taggetpj', {
-          tag: tag
-        }).then(res => {
-          this.starspj = res.body.data.result
-        }, err => {
-          console.log(err)
-        })
+        let res = await this.getdatabytag({ntag})
+        this.starspj = res.body.data.result
       },
 
       resetstarspj () {
@@ -105,43 +93,32 @@
 
       // 设置标签
       async settags () {
-        const id = this.pjid
+        const id = this.starspj[this.pjid].id
         const tag = this.$refs.tagname.value
         const color = this.defaultcolor
-        console.log(color)
-        await this.$http.post('http://localhost:3006/api/set', {
-          id: this.starspj[id].id,
-          tag: tag,
-          color: color
-        }).then(res => {
-          const tagname = res.body.tag.tagname
-          const color = res.body.tag.tagcolor
-          // console.log(tagname)
-          this.starspj[id].tag.push({
-            TagName: tagname,
-            TagColor: color
-          })
-          this.allstarpj[id].tag.push({
-            TagName: tagname,
-            TagColor: color
-          })
+        let res = await this.settag({id, tag, color})
+        const tagname = res.body.tag.tagname
+        const rescolor = res.body.tag.tagcolor
+        console.log(this.starspj[id])
+        this.starspj[this.pjid].tag.push({
+          TagName: tagname,
+          TagColor: rescolor
+        })
+        this.allstarpj[this.pjid].tag.push({
+          TagName: tagname,
+          TagColor: rescolor
         })
         this.dialogVisible = false
       },
       // 设置别名和备注
       async setsecname () {
-        const id = this.pjid
+        const id = this.starspj[this.pjid].id
         const secname = this.$refs.secname.value
         const personalintro = this.$refs.personalintro.value
-        await this.$http.post('http://localhost:3006/api/setsecnameandintro', {
-          id: this.starspj[id].id,
-          secname,
-          personalintro
-        }).then(res => {
-          this.starspj[id].secname = secname
-          this.starspj[id].personalintro = personalintro
-          this.dialogVisible2 = false
-        })
+        let res = await this.setsecnameandintro({id, secname, personalintro})
+        this.starspj[this.pjid].secname = res.body.data.secname
+        this.starspj[this.pjid].personalintro = res.body.data.personalintro
+        this.dialogVisible2 = false
       },
 
       settagpjid (id) {
@@ -165,14 +142,11 @@
       },
       // 删除标签
       async handleClose (id, tag) {
+        const tid = this.starspj[id].id
         this.removeTagByValue(this.starspj[id].tag, tag)
         this.removeTagByValue(this.allstarpj[id].tag, tag)
-        await this.$http.post('http://localhost:3006/api/deletetag', {
-          id: this.starspj[id].id,
-          tag
-        }).then(res => {
-          console.log(res.body.message)
-        })
+        let result = await this.deletetag({tid, tag})
+        console.log(result)
       }
     },
     data () {
@@ -194,8 +168,8 @@
   }
 </script>
 <style scoped>
-  @import '../store/spectre.min.css';
-  @import '../store/style.css';
+  @import '../assets/spectre.min.css';
+  @import '../assets/style.css';
 
   .main-container {
     max-width: 960px;
